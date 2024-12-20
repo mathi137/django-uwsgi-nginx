@@ -1,0 +1,38 @@
+services:
+  app1: &app
+    build: 
+      context: ./django
+      dockerfile: Dockerfile
+      args:
+        - WORKDIR=${WORKDIR}
+    container_name: django-container1
+    volumes:
+      - static_volume:${WORKDIR}/static       # Static files
+      - media_volume:${WORKDIR}/media         # Media files
+      - uwsgi_socket:/tmp                     # Shared uWSGI socket
+    environment:
+      - DEBUG=${DEBUG}                        # Set to False in production
+      - SECRET_KEY=${SECRET_KEY}              # Replace with a secure key
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}        # Replace with your domain or IP
+    command: uwsgi --ini ${WORKDIR}/uwsgi.ini
+    depends_on:
+      - nginx
+
+  nginx:
+    build: ./nginx
+    container_name: django-nginx
+    volumes:
+      - static_volume:${WORKDIR}/static       # Mount static files
+      - media_volume:${WORKDIR}/media         # Mount media files
+      - uwsgi_socket:/tmp                     # Shared uWSGI socket
+    environment:
+      - WORKDIR=${WORKDIR}
+      - SERVER_NAME=${SERVER_NAME}
+      - SERVER_PORT=${SERVER_PORT}
+    ports:
+      - "80:80"
+
+volumes:
+  static_volume:
+  media_volume:
+  uwsgi_socket:
